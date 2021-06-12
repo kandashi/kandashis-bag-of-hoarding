@@ -4,9 +4,11 @@
 
 ![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2Fkandashis-bag-of-hoarding&colorB=4aa94a)
 
+
 Adds a way to draw random loot from compendiums. It also comes with a community driven item compendium to draw from.
 
-![image](https://user-images.githubusercontent.com/1347785/121760758-457ccc80-cb24-11eb-948c-07184db2534e.png)
+![image](https://user-images.githubusercontent.com/1347785/121760758-457ccc80-cb24-11eb-948c-07184db2534e.png)![image](https://user-images.githubusercontent.com/1347785/121760790-6b09d600-cb24-11eb-93cc-2c6e0ef0bdc5.png)
+
 
 
 Please do provide items through a pull request of an issue on the github page.
