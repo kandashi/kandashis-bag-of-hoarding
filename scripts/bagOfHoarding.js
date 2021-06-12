@@ -4,44 +4,50 @@ class BoH {
      * @param {number} costLimit price limit
      * @param {number} quantity items to draw
      * @param {string} itemType string of the item type to draw from
-     * @param {string} packKey pack key to draw from
+     * @param {string} packKeys pack keys to draw from
      * @returns Array of Items
      */
-    static async randomItem(costLimit = 10000, quantity = 1, itemType, packKey = "kandashis-bag-of-hoarding.hoardingitems") {
+     static async randomItem(costLimit = 10000, quantity = 1, itemType, packKeys = ["kandashis-bag-of-hoarding.hoardingitems"]) {
         let itemArray = []
-        const contents = await game.packs.get(packKey).getDocuments()
-        const drawAble = contents.filter(i => {
-
-            if (i.data.data.price <= costLimit) {
-                if (!!itemType && i.data.type === itemType) {
-                    return true
+        let contents = []
+        for (let pack of packKeys) {
+            const packContent = await game.packs.get(pack).getDocuments()
+            let filtered = packContent.filter(i => {
+                if (i.data.data.price <= costLimit || !i.data.data.price) {
+                    if (!!itemType && i.data.type === itemType) {
+                        return true
+                    }
+                    if (!itemType) {
+                        return true
+                    }
                 }
-                if (!itemType) {
-                    return true
-                }
-            }
-            return false
-        })
-        if (drawAble.length < 1) { console.warn("Bag of Hoarding: no items found"); return false }
+                return false
+            })
+            contents = contents.concat(filtered)
+        }
+        if (contents.length < 1) { console.warn("Bag of Hoarding: no items found"); return false }
         for (let i = 0; i < quantity; i++) {
-            let index = BoH.getRandomInt(drawAble.length)
-            itemArray.push(drawAble[index])
+            let index = BoH.getRandomInt(contents.length)
+            itemArray.push(contents[index])
         }
         return itemArray
     }
+
 
     /**
      * 
      * @param {number} costLimit price limit
      * @param {number} quantity items to draw
      * @param {string} itemType string of the item type to draw from
-     * @param {string} packKey pack key to draw from
+     * @param {string} packs pack keys to draw from
      * @returns 
      */
-    static async randomItemToChat(costLimit, quantity, itemType, pack) {
-        let itemArray = await BoH.randomItem(costLimit, quantity, itemType, pack)
+    static async randomItemToChat(costLimit, quantity, itemType, packs) {
+        let content = "Bag of Hoarding Loot Generation:<br>"
+        let itemArray = await BoH.randomItem(costLimit, quantity, itemType, packs)
         if (!itemArray) return
-        let content = itemArray.reduce((a, v) => a += `@Compendium[${pack}.${v.id}]{${v.name}}<br>`, "Bag of Hoarding Loot Generation:<br>")
+        content += itemArray.reduce((a, v) => a += `@Compendium[${v.pack}.${v.id}]{${v.name}}<br>`, "")
+
         ChatMessage.create({
             content: content,
             whisper: [game.user.id]
@@ -54,13 +60,13 @@ class BoH {
      * @param {number} quantity items to draw
      * @param {Array} tokenArray array of tokens 
      * @param {string} itemType string of the item type to draw from
-     * @param {string} packKey pack key to draw from
+     * @param {string} packs pack keys to draw from
      * @returns 
      */
-    static async randomItemToActor(costLimit, quantity, tokenArray, itemType, pack) {
+    static async randomItemToActor(costLimit, quantity, tokenArray, itemType, packs) {
         if (!Array.isArray(tokenArray)) tokenArray = [tokenArray]
         for (let token of tokenArray) {
-            let itemArray = await BoH.randomItem(costLimit, quantity, itemType, pack)
+            let itemArray = await BoH.randomItem(costLimit, quantity, itemType, packs)
             if (!itemArray) return
             let dataArray = itemArray.map(i => i.data)
             token.actor.createEmbeddedDocuments("Item", dataArray)
@@ -78,11 +84,12 @@ class BoH {
             <p>Choose Compendium</p>
             <div class = "form-group">
                 <label>Select the Compendium to draw items from</label>
-                <select id="comp" name="comp">`;
+                <form>
+                `;
         for (let pack of packs) {
-            dialog_content += `<option value="${pack.collection}">${pack.metadata.label}</option>`;
+            dialog_content += `<input type="checkbox" value="${pack.collection}">${pack.metadata.label}</input><br>`;
         }
-        dialog_content += `</select></div>`;
+        dialog_content += `</form></div>`;
 
         new Dialog({
             title: ``,
@@ -105,14 +112,15 @@ class BoH {
             default: "Cancel",
             close: html => {
                 if (confirmed) {
-                    let selection_id = html.find(`[name=comp]`)[0].value;
-                    BoH.selectionDialog(selection_id);
+                    let boxes = Array.from(html.find("input[type='checkbox']:checked"))
+                    let array = boxes.map(i => i.value)
+                    BoH.selectionDialog(array);
                 }
             }
         }).render(true);
     }
 
-    static selectionDialog(id) {
+    static selectionDialog(ids) {
         new Dialog({
             title: `Draw Item Selection`,
             content: `
@@ -129,7 +137,16 @@ class BoH {
                 <label>Type</label>
                 <div class="form-fields">
                     <select name="type">
-                        <option value="weapon" selected="">Weapon</option><option value="equipment">Equipment</option><option value="consumable">Consumable</option><option value="tool">Tool</option><option value="loot">Loot</option><option value="class">Class</option><option value="spell">Spell</option><option value="feat">Feature</option><option value="backpack">Backpack</option>
+                        <option value="" selected="">Any</option>
+                        <option value="weapon" selected="">Weapon</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="consumable">Consumable</option>
+                        <option value="tool">Tool</option>
+                        <option value="loot">Loot</option>
+                        <option value="class">Class</option>
+                        <option value="spell">Spell</option>
+                        <option value="feat">Feature</option>
+                        <option value="backpack">Backpack</option>
                     </select>
                 </div>
             </div>
@@ -142,7 +159,7 @@ class BoH {
                         let number = Number(html.find("#num")[0].value);
                         let cost = Number(html.find("#cost")[0].value);
                         let type = html.find("select[name='type']")[0].value
-                        BoH.randomItemToChat(cost, number, type, id)
+                        BoH.randomItemToChat(cost, number, type, ids)
                     }
                 },
                 two: {
@@ -151,7 +168,7 @@ class BoH {
                         let number = Number(html.find("#num")[0].value);
                         let cost = Number(html.find("#cost")[0].value);
                         let type = html.find("select[name='type']")[0].value
-                        BoH.randomItemToActor(cost, number, canvas.tokens.controlled, type, id)
+                        BoH.randomItemToActor(cost, number, canvas.tokens.controlled, type, ids)
                     }
                 }
             }
