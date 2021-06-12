@@ -6,6 +6,9 @@
 
 Adds a way to draw random loot from compendiums. It also comes with a community driven item compendium to draw from.
 
+![image](https://user-images.githubusercontent.com/1347785/121760758-457ccc80-cb24-11eb-948c-07184db2534e.png)
+
+
 Please do provide items through a pull request of an issue on the github page.
 
 
