@@ -41,9 +41,10 @@ class BoH {
     static async randomItemToChat(costLimit, quantity, itemType, pack) {
         let itemArray = await BoH.randomItem(costLimit, quantity, itemType, pack)
         if (!itemArray) return
-        let content = itemArray.reduce((a, v) => a += `@Compendium[${pack}.${v.id}]{${v.name}}<br>`, "")
+        let content = itemArray.reduce((a, v) => a += `@Compendium[${pack}.${v.id}]{${v.name}}<br>`, "Bag of Hoarding Loot Generation:<br>")
         ChatMessage.create({
-            content: content
+            content: content,
+            whisper: [game.user.id]
         })
     }
 
