@@ -8,6 +8,7 @@ class BoH {
      * @returns Array of Items
      */
      static async randomItem(costLimit = 10000, quantity = 1, itemType, packKeys = ["kandashis-bag-of-hoarding.hoardingitems"]) {
+         costLimit = costLimit === 0 ? 1000 : costLimit
         let itemArray = []
         let contents = []
         for (let pack of packKeys) {
